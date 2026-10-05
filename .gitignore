@@ -1,0 +1,12 @@
+*.tgz
+.smoke/
+.verification/
+node_modules/
+.electron-app/
+desktop-dist/
+installer/
+dist/
+.expo/
+*.log
+.env
+.env.*
