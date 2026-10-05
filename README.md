@@ -18,7 +18,7 @@ gh auth setup-git
 Run these commands **inside your Expo project**:
 
 ```sh
-npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.1.0
+npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1
 npx expo-electron prebuild --platform windows
 npx expo-electron start
 npx expo-electron build --platform windows
@@ -32,7 +32,7 @@ For Yarn, pnpm, or Bun, add the same Git URL as a dev dependency with your packa
 ### One command, without keeping the CLI as a dependency
 
 ```sh
-npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.1.0 expo-electron prebuild --platform windows
+npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1 expo-electron prebuild --platform windows
 ```
 
 After preparation, these generated npm scripts also work:

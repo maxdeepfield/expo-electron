@@ -139,7 +139,12 @@ function prepare(options) {
     appId,
     productName: name,
     directories: { app: ".electron-app", output: "desktop-dist" },
-    files: ["dist/**/*", "electron/**/*", "package.json", "!node_modules{,/**/*}"],
+    files: [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "!node_modules{,/**/*}",
+    ],
     extraMetadata: { main: "electron/main.cjs" },
     npmRebuild: false,
     win: {
@@ -161,7 +166,11 @@ function prepare(options) {
   ]) {
     writes.set(
       `electron/${file}`,
-      fs.readFileSync(path.join(__dirname, "..", "templates", file)),
+      Buffer.from(
+        fs
+          .readFileSync(path.join(__dirname, "..", "templates", file), "utf8")
+          .replace(/\r\n/g, "\n"),
+      ),
     );
   }
   const icon = path.join(root, "assets", "icon.ico");
@@ -180,8 +189,14 @@ function prepare(options) {
   }
   for (const [file, content] of writes) {
     const target = path.join(root, file);
-    if (fs.existsSync(target) && !fs.readFileSync(target).equals(content))
-      conflicts.push(file);
+    if (fs.existsSync(target)) {
+      const previous = fs.readFileSync(target);
+      const matches = file.endsWith(".ico")
+        ? previous.equals(content)
+        : previous.toString("utf8").replace(/\r\n/g, "\n") ===
+          content.toString("utf8").replace(/\r\n/g, "\n");
+      if (!matches) conflicts.push(file);
+    }
   }
   for (const [key, value] of Object.entries(scripts)) {
     if (pkg.scripts?.[key] && pkg.scripts[key] !== value)

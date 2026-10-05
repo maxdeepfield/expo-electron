@@ -1,6 +1,6 @@
 {
   "name": "@maxdeepfield/expo-electron",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Prepare an existing Expo web app for Electron and Windows NSIS builds.",
   "private": true,
   "license": "UNLICENSED",
