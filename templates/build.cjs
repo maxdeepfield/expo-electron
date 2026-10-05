@@ -84,6 +84,11 @@ const args = [
   "--publish",
   "never",
 ];
+// Reuse the installed Windows runtime, including Electron's lazy binary download.
+// Other hosts let electron-builder fetch the Windows x64 distribution.
+if (process.platform === "win32" && process.arch === "x64") {
+  args.push(`--config.electronDist=${path.dirname(require("electron"))}`);
+}
 if (mode === "dir") args.push("--dir");
 else args.push("--config.directories.output=installer");
 run(args);
