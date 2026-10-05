@@ -139,7 +139,7 @@ function prepare(options) {
     appId,
     productName: name,
     directories: { app: ".electron-app", output: "desktop-dist" },
-    files: ["dist/**/*", "electron/**/*", "package.json"],
+    files: ["dist/**/*", "electron/**/*", "package.json", "!node_modules{,/**/*}"],
     extraMetadata: { main: "electron/main.cjs" },
     npmRebuild: false,
     win: {
