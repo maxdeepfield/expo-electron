@@ -50,11 +50,26 @@ fs.mkdirSync(path.join(stage, "electron"), { recursive: true });
 fs.cpSync(path.join(root, "dist"), path.join(stage, "dist"), {
   recursive: true,
 });
-for (const file of ["main.cjs", "static-server.cjs", "icon.ico"]) {
+for (const file of desktop.runtimeFiles || [
+  "main.cjs",
+  "static-server.cjs",
+  "icon.ico",
+]) {
   const source = path.join(__dirname, file);
-  if (fs.existsSync(source))
-    fs.copyFileSync(source, path.join(stage, "electron", file));
+  if (!fs.existsSync(source)) {
+    if (file === desktop.main)
+      throw new Error(`Electron main process is missing: electron/${file}`);
+    continue;
+  }
+  fs.mkdirSync(path.dirname(path.join(stage, "electron", file)), {
+    recursive: true,
+  });
+  fs.cpSync(source, path.join(stage, "electron", file), { recursive: true });
 }
+if (desktop.copyAssets)
+  fs.cpSync(path.join(root, "assets"), path.join(stage, "assets"), {
+    recursive: true,
+  });
 const desktop = {
   ...require("./desktop.json"),
   spa: expoConfig.web?.output !== "static",
@@ -67,7 +82,7 @@ const stagedPackage = {
   name: pkg.name,
   version: pkg.version,
   description: pkg.description || `${desktop.name} desktop app`,
-  main: "electron/main.cjs",
+  main: `electron/${desktop.main || "main.cjs"}`,
   private: true,
   ...(pkg.author ? { author: pkg.author } : {}),
 };

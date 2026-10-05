@@ -5,7 +5,7 @@
 В папке вашего приложения:
 
 ```sh
-npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1
+npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0
 npx expo-electron prebuild --platform windows
 npx expo-electron start
 npx expo-electron build --platform windows
@@ -17,7 +17,13 @@ npx expo-electron build --platform windows --installer
 Можно подготовить проект одной командой, без постоянной зависимости от CLI:
 
 ```sh
-npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1 expo-electron prebuild --platform windows
+npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0 expo-electron prebuild --platform windows
+```
+
+Для приложения с собственной Electron-оболочкой подготовка выглядит так:
+
+```sh
+npx expo-electron prepare --platform windows --adopt
 ```
 
 После подготовки также доступны `npm run electron`, `npm run build:win` и `npm run build:win:installer`.
@@ -25,6 +31,8 @@ npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1
 Имя и ID берутся из Expo config. CLI создаёт оболочку `electron/`, файл `electron-builder.json`, команды сборки и правила `.gitignore`. Устанавливает Electron и electron-builder, а недостающие веб-зависимости — через `expo install`, с учётом SDK. npm, pnpm, Yarn и Bun определяются по настройкам проекта/lockfile; можно выбрать явно: `--package-manager npm`.
 
 Точка входа Expo и Android/iOS-настройки сохраняются. При обнаружении другой Electron-настройки или изменённых файлов CLI останавливается до записи. `--dry-run` показывает план, `--no-install` пропускает установку, `--force` заменяет конфликтующие файлы после вашей проверки. Другие параметры: `--name "Моё приложение"`, `--app-id com.example.myapp`.
+
+Для приложения с собственной оболочкой `electron/main.js` используйте `--adopt`: CLI сохранит Electron main, preload, страницу загрузки, assets и файловые ассоциации из существующего builder config.
 
 У приложения должна работать веб-версия: нативным библиотекам нужны веб-реализации. Поддерживаются `web.output: "single"` и `"static"`; серверные/API routes требуют отдельного backend. Требования: Node.js 22.12+, Git для установки из репозитория, Windows для обычной сборки NSIS. Репозиторий приватный. Перед установкой выполните `gh auth login` и `gh auth setup-git` под аккаунтом с доступом. В GitHub Release есть npm-архив для установки без Git.
 

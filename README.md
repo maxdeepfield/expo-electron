@@ -18,7 +18,7 @@ gh auth setup-git
 Run these commands **inside your Expo project**:
 
 ```sh
-npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1
+npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0
 npx expo-electron prebuild --platform windows
 npx expo-electron start
 npx expo-electron build --platform windows
@@ -32,7 +32,7 @@ For Yarn, pnpm, or Bun, add the same Git URL as a dev dependency with your packa
 ### One command, without keeping the CLI as a dependency
 
 ```sh
-npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.1.1 expo-electron prebuild --platform windows
+npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0 expo-electron prebuild --platform windows
 ```
 
 After preparation, these generated npm scripts also work:
@@ -68,14 +68,15 @@ expo-electron build [project-dir] --platform windows [--installer | --dir]
 
 `prepare` and `prebuild` are equivalent. The default directory is the current project.
 
-| Preparation option           | Purpose                                                 |
-| ---------------------------- | ------------------------------------------------------- |
-| `--name "My App"`            | Desktop product name                                    |
-| `--app-id com.example.myapp` | Desktop application ID                                  |
-| `--package-manager npm`      | Override detection; also accepts pnpm, yarn, bun        |
-| `--no-install`               | Generate files without installing                       |
-| `--dry-run`                  | Preview without writing or installing                   |
-| `--force`                    | Replace conflicting generated files and desktop scripts |
+| Preparation option           | Purpose                                                     |
+| ---------------------------- | ----------------------------------------------------------- |
+| `--name "My App"`            | Desktop product name                                        |
+| `--app-id com.example.myapp` | Desktop application ID                                      |
+| `--package-manager npm`      | Override detection; also accepts pnpm, yarn, bun            |
+| `--no-install`               | Generate files without installing                           |
+| `--dry-run`                  | Preview without writing or installing                       |
+| `--force`                    | Replace conflicting generated files and desktop scripts     |
+| `--adopt`                    | Keep an existing `electron/main.js`, preload and app assets |
 
 For an uninstalled app with a dynamic config, install its dependencies first or supply `--name` and `--app-id`. Configuration errors from an installed Expo CLI are reported before file writes.
 
@@ -91,7 +92,13 @@ If `assets/icon.ico` exists at preparation time, it is copied automatically. Oth
 
 Your Expo app must have a working **web version**. Native-only libraries/features need web implementations. `web.output: "single"` and `"static"` work; server output/API routes require a separately hosted backend. Development starts its own Expo web server on a free port and stops it when Electron exits.
 
-Windows builds stage only the exported web bundle and desktop runtime in `.electron-app/`, with no Expo/native production dependencies. The source entry point is never rewritten. Build NSIS installers on Windows; other host platforms require electron-builder's cross-build toolchain. macOS/Linux packaging, native Electron modules, app-specific IPC, tray features, auto-updates and signing credentials are not generated.
+For an app that already has a custom `electron/main.js`, prepare it with `--adopt`. This keeps the existing Electron main process, preload script, loading page, assets and file associations, and adds the package's Expo dev launcher and staged Windows build.
+
+```sh
+npx expo-electron prepare --platform windows --adopt
+```
+
+Windows builds stage only the exported web bundle and desktop runtime in `.electron-app/`, with no Expo/native production dependencies. The source entry point is never rewritten. Build NSIS installers on Windows; other host platforms require electron-builder's cross-build toolchain. macOS/Linux packaging, native Electron modules, auto-updates and signing credentials are not generated. Use `--adopt` to keep IPC and tray behavior from a custom Electron main process.
 
 Initial defaults: Electron 44.5.1 and electron-builder 26.17.0. Change them in your app's dev dependencies as needed; existing versions are preserved. The production server keeps a stable origin for web storage. For a port collision, change `electron/desktop.json` or close the other app instance.
 

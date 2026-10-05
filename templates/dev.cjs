@@ -4,6 +4,7 @@ const net = require("node:net");
 const http = require("node:http");
 const { spawn, spawnSync } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
+const desktop = require(path.join(__dirname, "desktop.json"));
 const children = [];
 let stopping = false;
 function stop(code = 0) {
@@ -77,7 +78,11 @@ const ready = (url) =>
   const env = { ...process.env, EXPO_WEB_URL: url };
   delete env.ELECTRON_RUN_AS_NODE;
   console.log(`Starting Electron at ${url}`);
-  spawnChild(require("electron"), [path.join(__dirname, "main.cjs")], env);
+  spawnChild(
+    require("electron"),
+    [path.join(__dirname, desktop.main || "main.cjs")],
+    env,
+  );
 })().catch((err) => {
   console.error(err.message);
   stop(1);

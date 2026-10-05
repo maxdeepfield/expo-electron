@@ -12,6 +12,11 @@ const scripts = {
   "build:win": "node electron/build.cjs dir",
   "build:win:installer": "node electron/build.cjs installer",
 };
+const adoptedScripts = {
+  electron: "node electron/dev.cjs",
+  "build:win": "node electron/build.cjs dir",
+  "build:win:installer": "node electron/build.cjs installer",
+};
 const json = (value) => JSON.stringify(value, null, 2) + "\n";
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 
@@ -24,6 +29,7 @@ function parseArgs(args) {
     else if (arg === "--no-install") options.install = false;
     else if (arg === "--dry-run") options.dryRun = true;
     else if (arg === "--force") options.force = true;
+    else if (arg === "--adopt") options.adopt = true;
     else if (arg === "--platform") {
       if (args[++i] !== "windows")
         throw new Error(
@@ -58,6 +64,12 @@ function prepare(options) {
   const dependencies = { ...pkg.devDependencies, ...pkg.dependencies };
   if (!dependencies.expo)
     throw new Error("The target must be an existing Expo project.");
+  const electronDir = path.join(root, "electron");
+  const existingMain = path.join(electronDir, "main.js");
+  if (options.adopt && !fs.existsSync(existingMain))
+    throw new Error(
+      "--adopt expects your existing Electron main process at electron/main.js.",
+    );
   let expo = {};
   const appJson = path.join(root, "app.json");
   if (fs.existsSync(appJson)) expo = readJson(appJson).expo || {};
@@ -129,41 +141,64 @@ function prepare(options) {
   const desktop = {
     name,
     appId,
+    main: options.adopt ? "main.js" : "main.cjs",
+    runtimeFiles: options.adopt
+      ? ["main.js", "preload.js", "loading.html"].filter((file) =>
+          fs.existsSync(path.join(electronDir, file)),
+        )
+      : ["main.cjs", "static-server.cjs", "icon.ico"],
+    copyAssets: options.adopt && fs.existsSync(path.join(root, "assets")),
     port:
       20000 +
       (createHash("sha256").update(appId).digest().readUInt32BE(0) % 20000),
     width: 1100,
     height: 760,
   };
+  const currentBuilderPath = path.join(root, "electron-builder.json");
+  const baseBuilder = fs.existsSync(currentBuilderPath)
+    ? readJson(currentBuilderPath)
+    : pkg.build || {};
   const builder = {
+    ...baseBuilder,
     appId,
     productName: name,
-    directories: { app: ".electron-app", output: "desktop-dist" },
+    directories: {
+      ...baseBuilder.directories,
+      app: ".electron-app",
+      output: baseBuilder.directories?.output || "desktop-dist",
+    },
     files: [
       "dist/**/*",
       "electron/**/*",
+      ...(desktop.copyAssets ? ["assets/**/*"] : []),
       "package.json",
       "!node_modules{,/**/*}",
     ],
-    extraMetadata: { main: "electron/main.cjs" },
+    extraMetadata: {
+      ...baseBuilder.extraMetadata,
+      main: `electron/${desktop.main}`,
+    },
     npmRebuild: false,
     win: {
-      target: [{ target: "nsis", arch: ["x64"] }],
-      artifactName: "${productName}-Setup-${version}-${arch}.${ext}",
+      ...baseBuilder.win,
+      target: baseBuilder.win?.target || [{ target: "nsis", arch: ["x64"] }],
+      artifactName:
+        baseBuilder.win?.artifactName ||
+        "${productName}-Setup-${version}-${arch}.${ext}",
     },
     nsis: {
-      oneClick: false,
-      allowToChangeInstallationDirectory: true,
-      perMachine: false,
+      ...baseBuilder.nsis,
+      oneClick: baseBuilder.nsis?.oneClick ?? false,
+      allowToChangeInstallationDirectory:
+        baseBuilder.nsis?.allowToChangeInstallationDirectory ?? true,
+      perMachine: baseBuilder.nsis?.perMachine ?? false,
     },
   };
   const writes = new Map();
-  for (const file of [
-    "main.cjs",
-    "dev.cjs",
-    "build.cjs",
-    "static-server.cjs",
-  ]) {
+  const templateFiles = options.adopt
+    ? ["dev.cjs", "build.cjs"]
+    : ["main.cjs", "dev.cjs", "build.cjs", "static-server.cjs"];
+  for (const file of templateFiles) {
     writes.set(
       `electron/${file}`,
       Buffer.from(
@@ -174,7 +209,7 @@ function prepare(options) {
     );
   }
   const icon = path.join(root, "assets", "icon.ico");
-  if (fs.existsSync(icon)) {
+  if (!options.adopt && fs.existsSync(icon)) {
     writes.set("electron/icon.ico", fs.readFileSync(icon));
     builder.win.icon = "electron/icon.ico";
   }
@@ -183,7 +218,8 @@ function prepare(options) {
   const conflicts = [];
   if (
     fs.existsSync(path.join(root, "electron")) &&
-    !fs.existsSync(path.join(root, "electron", "desktop.json"))
+    !fs.existsSync(path.join(root, "electron", "desktop.json")) &&
+    !options.adopt
   ) {
     conflicts.push("electron/ (existing desktop setup)");
   }
@@ -198,8 +234,9 @@ function prepare(options) {
       if (!matches) conflicts.push(file);
     }
   }
-  for (const [key, value] of Object.entries(scripts)) {
-    if (pkg.scripts?.[key] && pkg.scripts[key] !== value)
+  const projectScripts = options.adopt ? adoptedScripts : scripts;
+  for (const [key, value] of Object.entries(projectScripts)) {
+    if (!options.adopt && pkg.scripts?.[key] && pkg.scripts[key] !== value)
       conflicts.push(`package.json scripts.${key}`);
   }
   if (conflicts.length && !options.force) {
@@ -212,7 +249,7 @@ function prepare(options) {
     "react-native-web",
     "@expo/metro-runtime",
   ].filter((dep) => !dependencies[dep]);
-  pkg.scripts = { ...pkg.scripts, ...scripts };
+  pkg.scripts = { ...pkg.scripts, ...projectScripts };
   pkg.devDependencies = { ...pkg.devDependencies };
   for (const [dep, version] of Object.entries({
     electron: "44.5.1",
@@ -333,7 +370,7 @@ function main(args = process.argv.slice(2)) {
   const options = parseArgs(args);
   if (options.help) {
     console.log(
-      'Usage: expo-electron prepare [project-dir] [--platform windows] [--name "My App"] [--app-id com.example.app]\n  --package-manager npm|pnpm|yarn|bun  Override package manager detection\n  --no-install  Prepare files only; install dependencies yourself\n  --dry-run     Show changes without writing or installing\n  --force       Replace conflicting generated files and desktop scripts',
+      'Usage: expo-electron prepare [project-dir] [--platform windows] [--name "My App"] [--app-id com.example.app]\n  --adopt       Keep existing electron/main.js, preload, and assets\n  --package-manager npm|pnpm|yarn|bun  Override package manager detection\n  --no-install  Prepare files only; install dependencies yourself\n  --dry-run     Show changes without writing or installing\n  --force       Replace conflicting generated files and desktop scripts',
     );
     return;
   }

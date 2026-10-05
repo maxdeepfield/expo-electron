@@ -19,7 +19,7 @@ Examples:
   expo-electron build --platform windows
   expo-electron build --platform windows --installer
 
-Prepare options: --platform windows, --no-install, --dry-run, --force, --name, --app-id, --package-manager
+Prepare options: --platform windows, --adopt (existing electron/main.js), --no-install, --dry-run, --force, --name, --app-id, --package-manager
 Build options: --platform windows, --installer, --dir (default)
 `;
 
