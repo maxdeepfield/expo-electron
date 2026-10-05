@@ -5,7 +5,7 @@
 В папке вашего приложения:
 
 ```sh
-npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0
+npm install --save-dev git+https://github.com/maxdeepfield/expo-electron.git#v0.2.1
 npx expo-electron prebuild --platform windows
 npx expo-electron start
 npx expo-electron build --platform windows
@@ -17,7 +17,7 @@ npx expo-electron build --platform windows --installer
 Можно подготовить проект одной командой, без постоянной зависимости от CLI:
 
 ```sh
-npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.2.0 expo-electron prebuild --platform windows
+npx --yes --package=git+https://github.com/maxdeepfield/expo-electron.git#v0.2.1 expo-electron prebuild --platform windows
 ```
 
 Для приложения с собственной Electron-оболочкой подготовка выглядит так:

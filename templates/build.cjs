@@ -50,6 +50,10 @@ fs.mkdirSync(path.join(stage, "electron"), { recursive: true });
 fs.cpSync(path.join(root, "dist"), path.join(stage, "dist"), {
   recursive: true,
 });
+const desktop = {
+  ...require("./desktop.json"),
+  spa: expoConfig.web?.output !== "static",
+};
 for (const file of desktop.runtimeFiles || [
   "main.cjs",
   "static-server.cjs",
@@ -70,10 +74,6 @@ if (desktop.copyAssets)
   fs.cpSync(path.join(root, "assets"), path.join(stage, "assets"), {
     recursive: true,
   });
-const desktop = {
-  ...require("./desktop.json"),
-  spa: expoConfig.web?.output !== "static",
-};
 fs.writeFileSync(
   path.join(stage, "electron/desktop.json"),
   JSON.stringify(desktop, null, 2),
